@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+google-cloud-firestore
+google-cloud-logging
+google-cloud-aiplatform
+google-cloud-discoveryengine
+pydantic
