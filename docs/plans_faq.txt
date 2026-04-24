@@ -1,0 +1,16 @@
+TELECOM PLANS - FREQUENTLY ASKED QUESTIONS
+
+Q: What plans are available?
+A: We offer three plans: Basic Plan (Rs.199/month, 20GB), Unlimited Pro (Rs.599/month, 100GB), and Family Pack (Rs.999/month, 150GB shared).
+
+Q: What happens when I exceed my data limit?
+A: Your speed is throttled to 1Mbps after you exceed your plan limit. You can purchase a 10GB add-on pack for Rs.99.
+
+Q: Can I change my plan mid-cycle?
+A: Yes. Plan changes take effect from the next billing cycle. There is no fee for upgrades. Downgrades require 3 days notice.
+
+Q: What is the validity of each plan?
+A: All plans are valid for 30 days from activation or renewal date.
+
+Q: Is there a contract or lock-in period?
+A: No. All plans are month-to-month with no lock-in period.

@@ -1,0 +1,20 @@
+REFUND POLICY
+
+Eligibility: Refund requests must be raised within 7 days of payment.
+
+Full Refund: Available if service was not activated or activated less than 24 hours ago.
+
+Partial Refund: Calculated as unused days divided by 30, multiplied by plan price.
+Example: Cancel on day 10 of a 30-day Rs.599 plan: refund = (20/30) x 599 = Rs.399
+
+Non-refundable items:
+- Add-on data packs once activated
+- International roaming charges incurred
+- Plans renewed within 48 hours of renewal date
+
+How to request a refund:
+1. Contact support via app or website
+2. Provide your mobile number and transaction ID
+3. Refund processed within 5-7 business days to original payment method
+
+Escalation: If not resolved in 7 days, escalate to nodal officer at nodal@telecom.example.com

@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from routes.subscriber import router as subscriber_router
 from routes.renewal import router as renewal_router
 from routes.webhook import router as webhook_router
@@ -13,3 +13,9 @@ app.include_router(webhook_router, tags=["Webhook"])
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.get("/test-search")
+async def test_search(q: str):
+    from services.knowledge_search import search_knowledge_base
+    answer = search_knowledge_base(q)
+    return {"query": q, "answer": answer}
