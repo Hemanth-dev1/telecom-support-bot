@@ -21,7 +21,9 @@ def get_string_value(val) -> str:
     if isinstance(val, str):
         return val.strip().replace('"', '').replace("'", "")
     if isinstance(val, dict):
-        for key in ["originalValue", "resolvedValue", "original", "stringValue"]:
+        # ✅ Added CX-specific phone number keys
+        for key in ["phoneNumber", "e164", "raw", "originalValue",
+                    "resolvedValue", "original", "stringValue"]:
             v = val.get(key, "")
             if v:
                 return str(v).strip()
@@ -49,10 +51,17 @@ async def dialogflow_webhook(request: Request):
             else:
                 plan_name = ""
 
+    # ✅ Extract raw user utterance correctly for CX
+    raw_text = (
+        body.get("text", "") or
+        body.get("transcript", "") or
+        ""
+    )
+
     logging.info(f"EXTRACTED tag={tag} phone={phone} plan={plan_name}")
 
     try:
-        response = await dispatch(tag, session_params, phone, plan_name, body)
+        response = await dispatch(tag, session_params, phone, plan_name, body, raw_text)
         ms = int((time.time() - start) * 1000)
         logging.info(f"webhook_ok tag={tag} ms={ms}")
         return response
@@ -60,16 +69,20 @@ async def dialogflow_webhook(request: Request):
         logging.error(f"webhook_error tag={tag} error={str(e)}")
         return _msg("Something went wrong. Please try again.")
 
-async def dispatch(tag: str, params: dict, phone: str, plan_name: str, body: dict) -> dict:
+
+async def dispatch(tag: str, params: dict, phone: str, plan_name: str, body: dict, raw_text: str) -> dict:
+
     if tag == "check-plan":
         if not phone:
             return _msg("Phone not found. Please try again.")
         sub = get_subscriber(phone)
         if not sub:
             return _msg(f"No account found for {phone}.")
-        return _msg(f"Your current plan is {sub['plan']}. "
-                    f"It renews on {sub['renewal_date']}. "
-                    f"Status: {sub['status']}.")
+        return _msg(
+            f"Your current plan is {sub['plan']}. "
+            f"It renews on {sub['renewal_date']}. "
+            f"Status: {sub['status']}."
+        )
 
     elif tag == "check-data":
         if not phone:
@@ -81,12 +94,27 @@ async def dispatch(tag: str, params: dict, phone: str, plan_name: str, body: dic
         total = sub.get("total_data_gb", 0)
         remaining = max(0, total - used)
         pct = int((used / total) * 100) if total > 0 else 0
-        return _msg(f"Data usage for {sub['name']}:\n"
-                    f"Used: {used:.1f} GB of {total} GB ({pct}%)\n"
-                    f"Remaining: {remaining:.1f} GB\n"
-                    f"Resets on: {sub['renewal_date']}")
+        return _msg(
+            f"Data usage for {sub['name']}:\n"
+            f"Used: {used:.1f} GB of {total} GB ({pct}%)\n"
+            f"Remaining: {remaining:.1f} GB\n"
+            f"Resets on: {sub['renewal_date']}"
+        )
 
     elif tag == "renew-plan":
+        # ✅ This tag only ASKS for confirmation — does NOT renew yet
+        if not phone:
+            return _msg("Phone not found. Please try again.")
+        sub = get_subscriber(phone)
+        if not sub:
+            return _msg("Account not found.")
+        return _msg(
+            f"I will renew your {sub['plan']} plan for one month. "
+            f"Confirm? (yes / no)"
+        )
+
+    elif tag == "confirm-renew":
+        # ✅ This tag does the ACTUAL renewal after user says yes
         if not phone:
             return _msg("Phone not found. Please try again.")
         sub = get_subscriber(phone)
@@ -100,7 +128,7 @@ async def dispatch(tag: str, params: dict, phone: str, plan_name: str, body: dic
         if not phone:
             return _msg("Phone not found. Please try again.")
         if not plan_name:
-            return _msg("Plan name not received. Try: Basic Plan, Unlimited Pro, Family Pack.")
+            return _msg("Which plan would you like? Basic Plan, Unlimited Pro, or Family Pack.")
         plan = get_plan(plan_name)
         if not plan:
             return _msg(f"Plan '{plan_name}' not found. Try: Basic Plan, Unlimited Pro, Family Pack.")
@@ -108,28 +136,35 @@ async def dispatch(tag: str, params: dict, phone: str, plan_name: str, body: dic
         if not sub:
             return _msg("Account not found.")
         update_subscriber(phone, {"plan": plan["name"], "total_data_gb": plan["data_gb"]})
-        return _msg(f"Upgraded to {plan['name']}! "
-                    f"You now have {plan['data_gb']}GB at Rs.{plan['price_inr']}/month.")
+        return _msg(
+            f"Upgraded to {plan['name']}! "
+            f"You now have {plan['data_gb']}GB at Rs.{plan['price_inr']}/month."
+        )
 
     elif tag == "knowledge-query":
-        # Try session params first
         user_query = ""
         for key in ["user_query", "user-query", "query"]:
             val = get_string_value(params.get(key, ""))
             if val and not val.startswith("$"):
                 user_query = val
                 break
-        # Fallback to raw text from Dialogflow body
+        # ✅ Correct CX fallback using raw utterance
         if not user_query:
-            user_query = body.get("text", "")
+            user_query = raw_text
         logging.info(f"knowledge_query: {user_query}")
         if not user_query:
-            return _msg(f"Query not found. Keys: {list(params.keys())}")
+            return _msg("I couldn't understand your query. Please rephrase.")
         kb_answer = search_knowledge_base(user_query)
         friendly = generate_friendly_response(kb_answer, user_query)
         return _msg(friendly)
 
-    return _msg(f"Unknown tag: {tag}")
+    return _msg(f"I'm not sure how to handle that. Please try again.")
 
+
+# ✅ camelCase — critical fix
 def _msg(text: str) -> dict:
-    return {"fulfillment_response": {"messages": [{"text": {"text": [text]}}]}}
+    return {
+        "fulfillmentResponse": {
+            "messages": [{"text": {"text": [text]}}]
+        }
+    }
