@@ -205,3 +205,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# GCP credentials
+*-key.json
+*.json.key
+
+# Project specific
+api/.env
+.DS_Store
